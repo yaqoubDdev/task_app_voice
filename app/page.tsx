@@ -39,8 +39,8 @@ export default function Home() {
       })
       chunkRef.current = []
       
-      uploadTranscribe(blob)
-      
+      const url = URL.createObjectURL(blob)
+      setRecordings(prev => [...prev, {url, blob, transcription: '', summary: ''}])
     }
     mediaRecorderRef.current.start()
     setRecording(true)
@@ -54,7 +54,21 @@ export default function Home() {
   }
 
 
-  const uploadTranscribe = async (blob: Blob) => {
+  const deleteAudio = (url: string) => {
+    setRecordings(prev => prev.filter(r => r.url !== url))
+    URL.revokeObjectURL(url)
+  }
+
+
+  const transcribeAudio = async (url: string, blob: Blob) => {
+
+    // check if already has transcription
+    const recordingIndex = recordings.findIndex(r => r.url === url)
+    if (recordings[recordingIndex].transcription) {
+      alert("This audio has already been transcribed.")
+      return
+    }
+    
     const formData = new FormData()
     formData.append('file', new File([blob], 'recording.mebm'))
 
@@ -64,11 +78,13 @@ export default function Home() {
     })
 
     const data = await res.json()
-    const url = URL.createObjectURL(blob)
+    
     const transcription = data.text
     const summary = data.summary
-    setRecordings(prev => [...prev, {url, blob, transcription, summary}])
-    
+
+    const updatedRecording = { ...recordings[recordingIndex], transcription, summary }
+    setRecordings(prev => prev.map((r, i) => i === recordingIndex ? updatedRecording : r))
+    alert("Transcription and summary completed!")
   }
 
 
@@ -98,16 +114,21 @@ export default function Home() {
           {recordings.map((audio, index) => (
             <div key={index} className="w-full bg-blue-50 border border-blue-200 rounded-lg p-4 shadow flex flex-col items-center">
               <div className="flex gap-2 mb-2">
-                <button className="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600 transition">Transcribe</button>
-                <button className="px-3 py-1 rounded bg-red-400 text-white hover:bg-red-500 transition">Delete</button>
+                <button className="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600 transition" onClick={() => transcribeAudio(audio.url, audio.blob)}>Transcribe</button>
+                <button className="px-3 py-1 rounded bg-red-400 text-white hover:bg-red-500 transition" onClick={() => deleteAudio(audio.url)}>Delete</button>
               </div>
               <audio controls src={audio.url} className="w-full mb-2"></audio>
-              <div className="w-full">
-                <h3 className="font-bold text-blue-700">Transcription:</h3>
-                <p className="text-gray-800 mb-2">{audio.transcription}</p>
-                <h3 className="font-bold text-blue-700">Summary:</h3>
-                <p className="text-gray-800">{audio.summary}</p>
-              </div>
+              {audio.transcription? (
+                <div className="w-full">
+                  <h3 className="font-bold text-blue-700">Transcription:</h3>
+                  <p className="text-gray-800 mb-2">{audio.transcription}</p>
+                  <h3 className="font-bold text-blue-700">Summary:</h3>
+                  <p className="text-gray-800">{audio.summary}</p>
+                </div>
+                ) : ( 
+                <p className="text-gray-500 italic">No transcription yet.</p> 
+                )
+              }
             </div>
           ))}
         </div>

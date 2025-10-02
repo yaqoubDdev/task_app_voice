@@ -31,6 +31,8 @@ export async function POST(req: Request) {
     })
 
     const text = transcription.text
+    const maxT = getMaxTokensForSummary(text)
+    console.log(maxT)
 
     const summaryResp = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -41,7 +43,7 @@ export async function POST(req: Request) {
         },
         { role: "user", content: `Summarize the following transcription:\n\n${text}` },
       ],
-      max_tokens: getMaxTokensForSummary(text),
+      max_tokens: maxT,
     })
 
     const summary = summaryResp.choices[0].message?.content || ""

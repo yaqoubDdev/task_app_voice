@@ -3,12 +3,14 @@ const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 })
 
-// const response = await client.responses.create({
-//     model: "gpt-4o",
-//     instructions: 'you talk like yoda',
-//     input: "what to do today?",
+const response = await client.responses.create({
+    model: "gpt-4o",
+    instructions: 'you talk like yoda',
+    input: "what to do today?",
     
-// })
+})
+
+console.log(response)
 
 // const completion = await client.chat.completions.create({
 //   model: 'gpt-4o',

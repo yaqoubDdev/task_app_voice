@@ -1,3 +1,17 @@
+
+# AI Voice Memo App
+
+This project is a Memo App that allows users to record audio input and automatically extracts and organizes:
+
+- **Memos**
+- **Tasks**
+- **Reminders**
+- **Deadlines**
+
+Simply speak your notes, and the app will transcribe and categorize your voice memos into actionable items.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

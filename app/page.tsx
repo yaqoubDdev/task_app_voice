@@ -5,13 +5,15 @@ type Recording = {
   url: string
   blob: Blob,
   transcription: string,
-  summary: string
+  summary: string,
+  section: 'notes' | 'tasks' | 'reminders' | 'deadlines'
 }
 
 export default function Home() {
 
   const [ recording, setRecording ] = useState(false)
   const [ recordings, setRecordings ] = useState<Recording[]>([])
+  const [ activeSection, setActiveSection ] = useState<'notes' | 'tasks' | 'reminders' | 'deadlines'>('notes')
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunkRef = useRef<Blob[]>([])
 
@@ -38,9 +40,9 @@ export default function Home() {
         type: 'audio/mebm'
       })
       chunkRef.current = []
-      
+      // Prompt user for section or use activeSection
       const url = URL.createObjectURL(blob)
-      setRecordings(prev => [...prev, {url, blob, transcription: '', summary: ''}])
+      setRecordings(prev => [...prev, {url, blob, transcription: '', summary: '', section: activeSection}])
     }
     mediaRecorderRef.current.start()
     setRecording(true)
@@ -89,46 +91,65 @@ export default function Home() {
 
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-blue-500 p-6">
-      <div className="bg-white rounded-xl shadow-lg p-8 max-w-xl w-full flex flex-col items-center">
-        <h1 className="text-3xl font-bold text-blue-700 mb-2">Task App Voice</h1>
-        <p className="text-lg text-gray-700 mb-6 text-center">Welcome to the voice-enabled task app!</p>
-        <div className="flex gap-4 mb-8">
-          {recording ? (
-            <button
-              onClick={stopRecording}
-              className="px-6 py-2 rounded-lg bg-red-500 text-white font-semibold shadow hover:bg-red-600 transition"
-            >
-              Stop Recording
-            </button>
-          ) : (
-            <button
-              onClick={startRecording}
-              className="px-6 py-2 rounded-lg bg-green-500 text-white font-semibold shadow hover:bg-green-600 transition"
-            >
-              Start Recording
-            </button>
-          )}
+    <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-900 to-blue-700 p-6">
+      {/* Title and subtitle at the top */}
+      <div className="w-full flex flex-col items-center mb-8">
+        <h1 className="text-3xl font-bold text-blue-100 mb-2 mt-4">AI Voice Memo App</h1>
+        <p className="text-lg text-blue-200 mb-6 text-center">Welcome to the voice-enabled Memo App!</p>
+      </div>
+      {/* Recording controls outside the card */}
+      <div className="flex gap-4 mb-8 w-full max-w-xl justify-center border-b border-blue-800 pb-6">
+        {recording ? (
+          <button
+            onClick={stopRecording}
+            className="px-6 py-2 rounded-lg bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition"
+          >
+            Stop Recording
+          </button>
+        ) : (
+          <button
+            onClick={startRecording}
+            className="px-6 py-2 rounded-lg bg-green-600 text-white font-semibold shadow hover:bg-green-700 transition"
+          >
+            Start Recording
+          </button>
+        )}
+      </div>
+      <div className="bg-blue-950 rounded-xl shadow-lg p-8 max-w-xl w-full flex flex-col items-center">
+        {/* Section navigation tabs */}
+        <div className="flex gap-4 mb-6 w-full justify-center">
+          <button onClick={() => setActiveSection('notes')} className={`px-4 py-2 rounded-lg font-semibold shadow transition ${activeSection === 'notes' ? 'bg-blue-800 text-white' : 'bg-blue-700 text-blue-100 hover:bg-blue-800'}`}>Notes</button>
+          <button onClick={() => setActiveSection('tasks')} className={`px-4 py-2 rounded-lg font-semibold shadow transition ${activeSection === 'tasks' ? 'bg-blue-800 text-white' : 'bg-blue-700 text-blue-100 hover:bg-blue-800'}`}>Tasks</button>
+          <button onClick={() => setActiveSection('reminders')} className={`px-4 py-2 rounded-lg font-semibold shadow transition ${activeSection === 'reminders' ? 'bg-blue-800 text-white' : 'bg-blue-700 text-blue-100 hover:bg-blue-800'}`}>Reminders</button>
+          <button onClick={() => setActiveSection('deadlines')} className={`px-4 py-2 rounded-lg font-semibold shadow transition ${activeSection === 'deadlines' ? 'bg-blue-800 text-white' : 'bg-blue-700 text-blue-100 hover:bg-blue-800'}`}>Deadlines</button>
         </div>
+        {/* Sectioned content */}
         <div className="w-full flex flex-col items-center gap-4">
-          {recordings.map((audio, index) => (
-            <div key={index} className="w-full bg-blue-50 border border-blue-200 rounded-lg p-4 shadow flex flex-col items-center">
-              <div className="flex gap-2 mb-2">
-                <button className="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600 transition" onClick={() => transcribeAudio(audio.url, audio.blob)}>Transcribe</button>
-                <button className="px-3 py-1 rounded bg-red-400 text-white hover:bg-red-500 transition" onClick={() => deleteAudio(audio.url)}>Delete</button>
-              </div>
-              <audio controls src={audio.url} className="w-full mb-2"></audio>
-              {audio.transcription? (
-                <div className="w-full">
-                  <h3 className="font-bold text-blue-700">Transcription:</h3>
-                  <p className="text-gray-800 mb-2">{audio.transcription}</p>
-                  <h3 className="font-bold text-blue-700">Summary:</h3>
-                  <p className="text-gray-800">{audio.summary}</p>
-                </div>
-                ) : ( 
-                <p className="text-gray-500 italic">No transcription yet.</p> 
-                )
-              }
+          {['notes', 'tasks', 'reminders', 'deadlines'].map(section => (
+            <div key={section} className={activeSection === section ? 'w-full' : 'hidden'}>
+              {recordings.filter(r => r.section === section).length === 0 ? (
+                <p className="text-blue-400 italic text-center">No {section} yet.</p>
+              ) : (
+                recordings.filter(r => r.section === section).map((audio) => (
+                  <div key={audio.url} className="w-full bg-blue-900 border border-blue-800 rounded-lg p-4 shadow flex flex-col items-center mb-2">
+                    <div className="flex gap-2 mb-2">
+                      <button className="px-3 py-1 rounded bg-blue-700 text-white hover:bg-blue-800 transition" onClick={() => transcribeAudio(audio.url, audio.blob)}>Transcribe</button>
+                      <button className="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 transition" onClick={() => deleteAudio(audio.url)}>Delete</button>
+                    </div>
+                    <audio controls src={audio.url} className="w-full mb-2"></audio>
+                    {audio.transcription ? (
+                      <div className="w-full">
+                        <h3 className="font-bold text-blue-200">Transcription:</h3>
+                        <p className="text-blue-100 mb-2">{audio.transcription}</p>
+                        <h3 className="font-bold text-blue-200">Summary:</h3>
+                        <p className="text-blue-100">{audio.summary}</p>
+                      </div>
+                    ) : (
+                      <p className="text-blue-400 italic">No transcription yet.</p>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           ))}
         </div>

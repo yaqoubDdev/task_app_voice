@@ -24,7 +24,6 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(await file.arrayBuffer())
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-
     const transcription = await openai.audio.transcriptions.create({
       file: new File([buffer], "recording.webm", { type: "audio/webm" }),
       model: "gpt-4o-mini-transcribe", // or "whisper-1"

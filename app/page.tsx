@@ -216,6 +216,7 @@ export default function Home() {
             return (
               <button
                 key={tab.key}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onClick={() => setActiveSection(tab.key as any)}
                 className={`flex items-center gap-2 px-3 py-2 text-sm font-semibold transition outline-none ${activeSection === tab.key ? 'text-white border-b-4 border-blue-300' : 'text-blue-100 hover:text-white border-b-4 border-transparent'}`}
                 style={{background: 'inherit'}}

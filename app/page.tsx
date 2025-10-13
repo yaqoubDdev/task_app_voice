@@ -210,14 +210,14 @@ export default function Home() {
       </div>
       <div className="bg-blue-950 rounded-xl shadow-lg p-8 max-w-xl w-full flex flex-col items-center">
         {/* Section navigation tabs */}
-        <div className="flex gap-2 mb-6 w-full bg-blue-950 pt-0 pl-2" style={{justifyContent: 'flex-start', marginTop: '-12px'}}>
+      <div className="flex gap-1 mb-6 w-full bg-blue-950 pt-0 pl-0 justify-start items-start" style={{marginTop: '-12px'}}>
           {tabs.map(tab => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.key}
                 onClick={() => setActiveSection(tab.key as any)}
-                className={`flex items-center gap-2 px-4 py-2 font-semibold transition outline-none ${activeSection === tab.key ? 'text-white border-b-4 border-blue-300' : 'text-blue-100 hover:text-white border-b-4 border-transparent'}`}
+                className={`flex items-center gap-2 px-3 py-2 text-sm font-semibold transition outline-none ${activeSection === tab.key ? 'text-white border-b-4 border-blue-300' : 'text-blue-100 hover:text-white border-b-4 border-transparent'}`}
                 style={{background: 'inherit'}}
               >
                 <Icon size={20} /> {tab.label}

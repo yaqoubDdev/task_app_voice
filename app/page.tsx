@@ -6,7 +6,12 @@ type Recording = {
   url: string
   blob: Blob,
   transcription: string,
-  summary: string
+  summary: string,
+  extracted?: {
+    tasks: number,
+    reminders: number,
+    deadlines: number
+  }
 }
 
 export default function Home() {
@@ -56,6 +61,29 @@ export default function Home() {
               <audio controls src={audio.url} className="w-full mb-2"></audio>
               {audio.transcription ? (
                 <div className="w-full">
+                  {/* Extracted content icons */}
+                  {audio.extracted && (
+                    <div className="flex gap-3 mb-2">
+                      {audio.extracted.tasks > 0 && (
+                        <span className="flex items-center gap-1 px-2 py-1 rounded bg-green-700 text-green-100 text-xs font-semibold">
+                          <CheckCircle size={16} className="text-green-300" />
+                          {audio.extracted.tasks} Task{audio.extracted.tasks > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {audio.extracted.reminders > 0 && (
+                        <span className="flex items-center gap-1 px-2 py-1 rounded bg-yellow-600 text-yellow-100 text-xs font-semibold">
+                          <Bell size={16} className="text-yellow-200" />
+                          {audio.extracted.reminders} Reminder{audio.extracted.reminders > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {audio.extracted.deadlines > 0 && (
+                        <span className="flex items-center gap-1 px-2 py-1 rounded bg-red-700 text-red-100 text-xs font-semibold">
+                          <Calendar size={16} className="text-red-200" />
+                          {audio.extracted.deadlines} Deadline{audio.extracted.deadlines > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <h3 className="font-bold text-blue-200">Transcription:</h3>
                   <p className="text-blue-100 mb-2">{audio.transcription}</p>
                   <h3 className="font-bold text-blue-200">Summary:</h3>
@@ -187,10 +215,6 @@ export default function Home() {
   const transcribeAudio = async (url: string, blob: Blob) => {
     // Only for notes
     const recordingIndex = notes.findIndex(r => r.url === url)
-    // if (notes[recordingIndex]?.transcription) {
-    //   alert("This audio has already been transcribed.")
-    //   return
-    // }
     const formData = new FormData()
     formData.append('file', new File([blob], 'recording.mebm'))
     try {
@@ -202,12 +226,16 @@ export default function Home() {
       console.log(data)
       const transcription = data.text
       const summary = data.summary
-      const updatedRecording = { ...notes[recordingIndex], transcription, summary }
+      const extracted = {
+        tasks: Array.isArray(data.tasks) ? data.tasks.length : 0,
+        reminders: Array.isArray(data.reminders) ? data.reminders.length : 0,
+        deadlines: Array.isArray(data.deadlines) ? data.deadlines.length : 0
+      }
+      const updatedRecording = { ...notes[recordingIndex], transcription, summary, extracted }
       setNotes(prev => prev.map((r, i) => i === recordingIndex ? updatedRecording : r))
       // Append new tasks, deadlines, reminders if present
       if (Array.isArray(data.tasks) && data.tasks.length > 0) {
         setTasks(prev => {
-          // Avoid duplicates by title
           const existingTitles = new Set(prev.map((t: {title: string}) => t.title))
           const newTasks = data.tasks.filter((t: {title: string}) => !existingTitles.has(t.title))
           return [...prev, ...newTasks]

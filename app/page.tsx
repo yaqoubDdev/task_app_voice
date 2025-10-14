@@ -20,19 +20,12 @@ export default function Home() {
   const [ notes, setNotes ] = useState<Recording[]>([])
 
   // State for other tabs (now updatable)
-  const [tasks, setTasks] = useState([
-    { id: 1, title: 'Buy groceries', done: false },
-    { id: 2, title: 'Finish project report', done: true },
-    { id: 3, title: 'Call Alice', done: false },
-  ])
-  const [deadlines, setDeadlines] = useState([
-    { id: 1, title: 'Submit tax return', date: '2025-10-20' },
-    { id: 2, title: 'Pay rent', date: '2025-10-31' },
-  ])
-  const [reminders, setReminders] = useState([
-    { id: 1, text: 'Doctor appointment at 3pm' },
-    { id: 2, text: 'Water the plants' },
-  ])
+  type Task = { id?: number, title: string, done: boolean }
+  type Deadline = { id?: number, title: string, date: string }
+  type Reminder = { id?: number, text: string }
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [deadlines, setDeadlines] = useState<Deadline[]>([])
+  const [reminders, setReminders] = useState<Reminder[]>([])
   const [ activeSection, setActiveSection ] = useState<'notes' | 'tasks' | 'reminders' | 'deadlines'>('notes')
 
   // Task tab handlers

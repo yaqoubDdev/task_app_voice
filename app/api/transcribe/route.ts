@@ -33,6 +33,7 @@ export async function POST(req: Request) {
     const maxT = getMaxTokensForSummary(text)
     console.log(maxT)
 
+    // Get summary
     const summaryResp = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -44,10 +45,53 @@ export async function POST(req: Request) {
       ],
       max_tokens: maxT,
     })
-
     const summary = summaryResp.choices[0].message?.content || ""
 
-    return Response.json({ text, summary })
+    // Extraction prompt for OpenAI
+    const extractionPrompt = `
+You are an expert assistant for extracting actionable items from meeting or memo transcriptions.
+
+Given a transcription, return a JSON object with the following structure:
+{
+  "tasks": [ { "title": string, "done": boolean } ],
+  "deadlines": [ { "title": string, "date": string } ],
+  "reminders": [ { "text": string } ]
+}
+
+Guidelines:
+- Only include items that are clearly mentioned in the text.
+- For tasks, extract actionable to-dos. Set "done" to false unless the text says it is completed.
+- For deadlines, extract the title and any date mentioned (ISO format if possible).
+- For reminders, extract any reminders or follow-ups.
+- If a category has no items, return an empty array for it.
+- The JSON must be valid and readable.
+`
+
+    const extractResp = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: extractionPrompt,
+        },
+        { role: "user", content: text },
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 300,
+    })
+    let tasks = []
+    let deadlines = []
+    let reminders = []
+    try {
+      const parsed = JSON.parse(extractResp.choices[0].message?.content || '{}')
+      tasks = parsed.tasks || []
+      deadlines = parsed.deadlines || []
+      reminders = parsed.reminders || []
+    } catch (e) {
+      // fallback: empty arrays
+    }
+
+    return Response.json({ text, summary, tasks, deadlines, reminders })
   } catch (err) {
     console.error("Transcription error:", err)
     return new Response("Error processing audio", { status: 500 })

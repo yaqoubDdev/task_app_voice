@@ -14,21 +14,30 @@ export default function Home() {
   const [ recording, setRecording ] = useState(false)
   const [ notes, setNotes ] = useState<Recording[]>([])
 
-  // Dummy data for other tabs
-  const [tasks] = useState([
+  // State for other tabs (now updatable)
+  const [tasks, setTasks] = useState([
     { id: 1, title: 'Buy groceries', done: false },
     { id: 2, title: 'Finish project report', done: true },
     { id: 3, title: 'Call Alice', done: false },
   ])
-  const [deadlines] = useState([
+  const [deadlines, setDeadlines] = useState([
     { id: 1, title: 'Submit tax return', date: '2025-10-20' },
     { id: 2, title: 'Pay rent', date: '2025-10-31' },
   ])
-  const [reminders] = useState([
+  const [reminders, setReminders] = useState([
     { id: 1, text: 'Doctor appointment at 3pm' },
     { id: 2, text: 'Water the plants' },
   ])
   const [ activeSection, setActiveSection ] = useState<'notes' | 'tasks' | 'reminders' | 'deadlines'>('notes')
+
+  // Task tab handlers
+  function handleToggleTaskDone(idx: number) {
+    setTasks(prev => prev.map((t, i) => i === idx ? { ...t, done: !t.done } : t))
+  }
+
+  function handleDeleteTask(idx: number) {
+    setTasks(prev => prev.filter((_, i) => i !== idx))
+  }
 
   // Tab configuration list
   const tabs = [
@@ -66,10 +75,28 @@ export default function Home() {
         <p className="text-blue-400 italic text-center">No tasks yet.</p>
       ) : (
         <ul className="w-full flex flex-col gap-2">
-          {tasks.map(task => (
-            <li key={task.id} className={`flex items-center justify-between bg-blue-900 border border-blue-800 rounded-lg p-4 shadow mb-1 ${task.done ? 'opacity-60' : ''}`}>
-              <span className={`font-medium text-blue-100 ${task.done ? 'line-through' : ''}`}>{task.title}</span>
-              <span className={`ml-4 px-2 py-1 rounded text-xs font-semibold ${task.done ? 'bg-green-700 text-green-100' : 'bg-yellow-700 text-yellow-100'}`}>{task.done ? 'Done' : 'Pending'}</span>
+          {tasks.map((task: {id?: number, title: string, done: boolean}, idx: number) => (
+            <li key={task.id ?? task.title} className={`flex items-center justify-between bg-blue-900 border border-blue-800 rounded-lg p-4 shadow mb-1 ${task.done ? 'opacity-60' : ''}`}>
+              <div className="flex items-center gap-2">
+                <button
+                  className={`w-5 h-5 rounded-full border-2 ${task.done ? 'bg-green-600 border-green-700' : 'bg-blue-950 border-blue-400'} flex items-center justify-center transition`}
+                  title={task.done ? 'Mark as incomplete' : 'Mark as complete'}
+                  onClick={() => handleToggleTaskDone(idx)}
+                >
+                  {task.done && <span className="block w-3 h-3 bg-green-300 rounded-full"></span>}
+                </button>
+                <span className={`font-medium text-blue-100 ${task.done ? 'line-through' : ''}`}>{task.title}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`ml-2 px-2 py-1 rounded text-xs font-semibold ${task.done ? 'bg-green-700 text-green-100' : 'bg-yellow-700 text-yellow-100'}`}>{task.done ? 'Done' : 'Pending'}</span>
+                <button
+                  className="ml-2 px-2 py-1 rounded bg-red-700 text-white text-xs font-semibold hover:bg-red-800 transition"
+                  title="Delete task"
+                  onClick={() => handleDeleteTask(idx)}
+                >
+                  Delete
+                </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -160,10 +187,10 @@ export default function Home() {
   const transcribeAudio = async (url: string, blob: Blob) => {
     // Only for notes
     const recordingIndex = notes.findIndex(r => r.url === url)
-    if (notes[recordingIndex]?.transcription) {
-      alert("This audio has already been transcribed.")
-      return
-    }
+    // if (notes[recordingIndex]?.transcription) {
+    //   alert("This audio has already been transcribed.")
+    //   return
+    // }
     const formData = new FormData()
     formData.append('file', new File([blob], 'recording.mebm'))
     try {
@@ -172,11 +199,35 @@ export default function Home() {
         body: formData
       })
       const data = await res.json()
+      console.log(data)
       const transcription = data.text
       const summary = data.summary
       const updatedRecording = { ...notes[recordingIndex], transcription, summary }
       setNotes(prev => prev.map((r, i) => i === recordingIndex ? updatedRecording : r))
-      alert("Transcription and summary completed!")
+      // Append new tasks, deadlines, reminders if present
+      if (Array.isArray(data.tasks) && data.tasks.length > 0) {
+        setTasks(prev => {
+          // Avoid duplicates by title
+          const existingTitles = new Set(prev.map((t: {title: string}) => t.title))
+          const newTasks = data.tasks.filter((t: {title: string}) => !existingTitles.has(t.title))
+          return [...prev, ...newTasks]
+        })
+      }
+      if (Array.isArray(data.deadlines) && data.deadlines.length > 0) {
+        setDeadlines(prev => {
+          const existingTitles = new Set(prev.map((d: {title: string}) => d.title))
+          const newDeadlines = data.deadlines.filter((d: {title: string}) => !existingTitles.has(d.title))
+          return [...prev, ...newDeadlines]
+        })
+      }
+      if (Array.isArray(data.reminders) && data.reminders.length > 0) {
+        setReminders(prev => {
+          const existingTexts = new Set(prev.map((r: {text: string}) => r.text))
+          const newReminders = data.reminders.filter((r: {text: string}) => !existingTexts.has(r.text))
+          return [...prev, ...newReminders]
+        })
+      }
+      alert("Transcription and summary completed! Tabs updated.")
     } catch (error) {
       alert(`error transcribing: ${error}`)
     }
